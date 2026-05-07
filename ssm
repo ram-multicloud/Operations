@@ -1,0 +1,837 @@
+# Azure Monitoring
+
+**Azure Monitor** is Microsoft Azure's **unified monitoring solution** that collects, analyzes, and acts on telemetry data from your Azure and on-premises environments.
+
+It helps you understand how your applications are performing and proactively identifies issues affecting them and the resources they depend on.
+
+### 🔑 Key Definition
+
+> Azure Monitor **maximizes the availability and performance** of your applications and services by delivering a comprehensive solution for collecting, analyzing, and acting on telemetry from your cloud and on-premises environments.
+
+### Azure Monitor Track
+
+| Category | Examples |
+|---|---|
+| **Infrastructure** | Virtual Machines, Storage, Networking |
+| **Applications** | Web Apps, APIs, Microservices |
+| **Databases** | Azure SQL, Cosmos DB, MySQL |
+| **Containers** | AKS, Docker Containers |
+| **Serverless** | Azure Functions, Logic Apps |
+| **On-Premises** | Servers connected via Azure Arc |
+
+## Azure Monitoring Matters
+
+### Real-World Scenario
+
+> *A bank runs its payment system on Azure. Without monitoring, if the database CPU spikes to 100%, transactions fail silently. With Azure Monitor, an alert fires, the on-call team is notified via SMS, and the issue is resolved before customers notice.*
+
+
+## 3. Core Components of Azure Monitor
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    AZURE MONITOR                        │
+│                                                         │
+│   ┌──────────┐   ┌──────────┐   ┌─────────────────┐     │
+│   │ METRICS  │   │  LOGS    │   │   DISTRIBUTED   │     │
+│   │          │   │          │   │    TRACING      │     │
+│   └──────────┘   └──────────┘   └─────────────────┘     │
+│                                                         │
+│   ┌──────────┐   ┌──────────┐   ┌─────────────────┐     │
+│   │  ALERTS  │   │DASHBOARDS│   │   APP INSIGHTS  │     │
+│   │          │   │          │   │                 │     │
+│   └──────────┘   └──────────┘   └─────────────────┘     │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Components
+
+| Component | Purpose |
+|---|---|
+| **Metrics** | Numerical time-series data (CPU %, memory) |
+| **Logs** | Detailed records of events and operations |
+| **Alerts** | Notify teams when thresholds are crossed |
+| **Dashboards** | Visual overview of health and performance |
+| **Workbooks** | Interactive reports and data analysis |
+| **Application Insights** | Deep application performance monitoring |
+| **Action Groups** | Define who gets notified and how |
+
+---
+
+## Azure Monitor Architecture
+
+### How Data Flows in Azure Monitor
+
+```
+[Azure Resources]          [On-Premises / Other Clouds]
+      │                              │
+      ▼                              ▼
+[Diagnostic Settings]    [Azure Monitor Agent / Arc]
+      │                              │
+      └──────────────┬───────────────┘
+                     ▼
+           ┌──────────────────┐
+           │  Azure Monitor   │
+           │  Data Platform   │
+           ├──────────────────┤
+           │  Metrics Store   │
+           │  Log Analytics   │
+           │  (Logs Store)    │
+           └────────┬─────────┘
+                    │
+      ┌─────────────┼─────────────┐
+      ▼             ▼             ▼
+  [Alerts]     [Dashboards]  [Workbooks]
+      │
+      ▼
+[Action Groups]
+      │
+   ┌──┴──┐
+Email  SMS  Teams  Webhook  ITSM
+```
+
+### Data Sources
+
+**1. Application Layer**
+- Application Insights SDK
+- Custom telemetry via REST API
+
+**2. Operating System Layer**
+- Azure Monitor Agent (AMA)
+- Windows Event Logs
+- Linux Syslog
+
+**3. Azure Resource Layer**
+- Automatically collected metrics
+- Diagnostic logs (must be enabled)
+- Activity Logs (auto-enabled)
+
+**4. Azure Subscription Layer**
+- Azure Activity Log (tenant-level events)
+
+**5. Azure Tenant Layer**
+- Azure Active Directory logs
+
+---
+
+## 5. Metrics in Azure Monitor
+
+### What are Metrics?
+
+Metrics are **numerical values** collected at regular intervals that describe some aspect of a system at a particular point in time.
+
+- Collected **every 1 minute** by default
+- Stored for **93 days** in the Metrics database
+- Near **real-time** visibility
+
+### Types of Metrics
+
+| Type | Description | Example |
+|---|---|---|
+| **Platform Metrics** | Auto-collected by Azure | VM CPU Percentage |
+| **Guest OS Metrics** | From inside the VM | Memory available bytes |
+| **Application Metrics** | From App Insights | Request rate, Response time |
+| **Custom Metrics** | User-defined | Business KPIs |
+
+### Viewing Metrics – Step by Step
+
+**Step 1:** Go to **Azure Portal** → Search "Monitor"  
+**Step 2:** Click **Metrics** in the left panel  
+**Step 3:** Click **Select a scope** → Choose your resource (e.g., a VM)  
+**Step 4:** Select a **Metric** (e.g., `Percentage CPU`)  
+**Step 5:** Choose an **Aggregation** (Avg, Max, Min, Count)  
+**Step 6:** Adjust the **Time Range** (last 1 hour, 24 hours, etc.)  
+
+### Common Metrics by Resource Type
+
+**Virtual Machine Metrics:**
+- `Percentage CPU` – CPU utilization
+- `Available Memory Bytes` – Free memory
+- `Disk Read/Write Operations/Sec`
+- `Network In/Out`
+
+**Azure SQL Database Metrics:**
+- `DTU consumption percent`
+- `Deadlocks`
+- `Connection failed`
+- `Storage percent`
+
+**App Service (Web App) Metrics:**
+- `Http 5xx` – Server errors
+- `Response Time`
+- `Requests`
+- `Memory working set`
+
+### Logs
+
+Logs contain **detailed event data** with a timestamp and various properties. Unlike metrics (numbers), logs can contain rich structured data.
+
+### Log Types
+
+| Log Type | Description | Retention |
+|---|---|---|
+| **Activity Log** | Subscription-level operations (who did what) | 90 days (free) |
+| **Resource Logs** | Diagnostic info from Azure resources | Custom (paid) |
+| **Azure AD Logs** | Sign-ins, audit events | 7–30 days |
+| **Custom Logs** | Your own application logs | Custom |
+
+### Activity Log – Key Use Cases
+
+- **Security Auditing:** Who deleted the storage account?
+- **Compliance:** When was the VM stopped?
+- **Change Tracking:** Who modified the firewall rules?
+
+> 📝 *The Activity Log is always on. No setup required.*
+
+### Resource Logs – Must Be Enabled
+
+Resource logs (formerly called Diagnostic Logs) must be configured per resource.
+
+**Categories include:**
+- `AuditLogs` – Security and access events
+- `SignInLogs` – Authentication attempts
+- `QueryStore` – SQL query performance
+- `AppServiceHTTPLogs` – Web app requests
+
+
+## Log Analytics Workspace
+
+A **Log Analytics Workspace** is the central repository where all your Azure Monitor log data is stored and queried.
+
+Think of it as a **specialized database** for monitoring data.
+
+### Architecture
+
+```
+[Multiple Azure Resources]
+           │
+           ▼
+┌──────────────────────────┐
+│  Log Analytics Workspace │
+│  ┌────────────────────┐  │
+│  │   Tables (Data)    │  │
+│  │ - AzureActivity    │  │
+│  │ - Heartbeat        │  │
+│  │ - Perf             │  │
+│  │ - SecurityEvent    │  │
+│  │ - AzureDiagnostics │  │
+│  └────────────────────┘  │
+└──────────────────────────┘
+           │
+           ▼
+    [KQL Queries / Alerts / Workbooks]
+```
+
+### Creating a Log Analytics Workspace
+
+**Step 1:** Azure Portal → Search "Log Analytics Workspaces"  
+**Step 2:** Click **+ Create**  
+**Step 3:** Fill in:
+- **Subscription:** Your subscription
+- **Resource Group:** Create new or existing
+- **Name:** e.g., `myapp-law-prod`
+- **Region:** Same as your resources (reduces egress cost)
+
+**Step 4:** Click **Review + Create** → **Create**
+
+### Common Tables in Log Analytics
+
+| Table | Contains |
+|---|---|
+| `AzureActivity` | Subscription activity logs |
+| `Heartbeat` | VM connectivity checks |
+| `Perf` | Performance counters |
+| `SecurityEvent` | Windows security events |
+| `Syslog` | Linux system logs |
+| `AppServiceHTTPLogs` | Web App HTTP requests |
+| `AzureDiagnostics` | Mixed resource diagnostics |
+| `AzureMetrics` | Resource metrics |
+| `ContainerLog` | AKS container logs |
+
+
+### What is KQL
+
+**KQL (Kusto Query Language)** is the query language used to search and analyze data in Log Analytics. It's powerful, readable, and optimized for time-series data.
+
+## Alerts
+
+Alerts **proactively notify you** when specific conditions are found in your monitoring data. They allow you to identify and address issues before your users notice them.
+
+### Alert Components
+
+```
+┌─────────────────────────────────────────┐
+│           ALERT RULE                    │
+│                                         │
+│  ┌─────────────┐   ┌─────────────────┐  │
+│  │   SCOPE     │   │   CONDITION     │  │
+│  │ (Resource)  │   │ (What triggers) │  │
+│  └─────────────┘   └─────────────────┘  │
+│                                         │
+│  ┌─────────────┐   ┌─────────────────┐  │
+│  │   ACTION    │   │   DETAILS       │  │
+│  │   GROUP     │   │ (Name, Severity)│  │
+│  └─────────────┘   └─────────────────┘  │
+└─────────────────────────────────────────┘
+```
+
+### Alert Types
+
+| Alert Type | Based On | Use Case |
+|---|---|---|
+| **Metric Alert** | Numeric metric values | CPU > 90% |
+| **Log Alert** | KQL query results | Error count > 10 |
+| **Activity Log Alert** | Azure operations | VM deleted |
+| **Smart Detection Alert** | AI-powered anomalies | Unusual response time |
+| **Resource Health Alert** | Azure service health | Region outage |
+
+### Severity Levels
+
+| Severity | Name | Meaning |
+|---|---|---|
+| **Sev 0** | Critical | Immediate action required |
+| **Sev 1** | Error | Significant issue |
+| **Sev 2** | Warning | Issue requires attention |
+| **Sev 3** | Informational | For awareness |
+| **Sev 4** | Verbose | Debug-level information |
+
+---
+
+### Step-by-Step: Create a Metric Alert
+
+**Scenario:** Alert when VM CPU exceeds 85% for 5 minutes.
+
+**Step 1: Navigate to Alerts**
+- Azure Portal → **Monitor** → **Alerts** → **+ Create** → **Alert rule**
+
+**Step 2: Select Scope**
+- Click **Select scope**
+- Choose your resource type: **Virtual Machines**
+- Select your VM → **Done**
+
+**Step 3: Configure Condition**
+- Click **Add condition**
+- Signal type: **Metrics**
+- Signal name: `Percentage CPU`
+- Configure threshold:
+  - Operator: `Greater than`
+  - Threshold value: `85`
+  - Aggregation: `Average`
+  - Aggregation granularity: `5 minutes`
+  - Frequency of evaluation: `1 minute`
+
+**Step 4: Set Action Group** *(covered in next section)*
+
+**Step 5: Alert Rule Details**
+- Alert rule name: `VM-CPU-High-Alert`
+- Description: `Fires when CPU exceeds 85% for 5 minutes`
+- Severity: `Sev 2 - Warning`
+- Enable upon creation: ✅ Yes
+
+**Step 6: Review + Create**
+
+---
+
+### Step-by-Step: Create a Log Alert
+
+**Scenario:** Alert when more than 5 errors occur in 15 minutes.
+
+**Step 1:** Monitor → Alerts → **+ Create** → **Alert rule**
+
+**Step 2:** Select scope → Choose your **Log Analytics Workspace**
+
+**Step 3:** Add condition → Signal type: **Custom log search**
+
+**Step 4:** Enter your KQL query:
+```kql
+AzureDiagnostics
+| where Level == "Error"
+| where TimeGenerated > ago(15m)
+| summarize ErrorCount = count()
+```
+
+**Step 5:** Configure Alert Logic:
+- Based on: `Number of results`
+- Operator: `Greater than`
+- Threshold value: `5`
+- Aggregation granularity: `15 minutes`
+- Frequency: `5 minutes`
+
+**Step 6:** Assign Action Group, set severity, name it → **Create**
+
+---
+
+### Step-by-Step: Create an Activity Log Alert
+
+**Scenario:** Alert when any Virtual Machine is deleted.
+
+**Step 1:** Monitor → Alerts → + Create → Alert rule
+
+**Step 2:** Select scope → Choose your **Subscription**
+
+**Step 3:** Add condition:
+- Signal type: **Activity Log**
+- Signal name: `Delete Virtual Machine (virtualMachines)`
+- Event level: `Critical, Error, Warning`
+- Status: `Succeeded`
+
+**Step 4:** Assign Action Group → **Create**
+
+---
+
+## 10. Action Groups
+
+### What is an Action Group?
+
+An **Action Group** defines **who gets notified** and **how** when an alert fires. You can reuse the same Action Group across multiple alerts.
+
+### Notification Types
+
+| Type | Description |
+|---|---|
+| **Email** | Send email to one or more addresses |
+| **SMS** | Text message notification |
+| **Voice** | Phone call alert |
+| **Azure App Push** | Mobile push notification |
+
+### Action Types
+
+| Action | Description |
+|---|---|
+| **Automation Runbook** | Trigger an Azure Automation runbook |
+| **Azure Function** | Call an Azure Function |
+| **ITSM** | Create a ticket in ServiceNow/Jira |
+| **Logic App** | Trigger a Logic App workflow |
+| **Webhook** | POST to any HTTP endpoint |
+| **Event Hub** | Send to Azure Event Hub |
+
+### Creating an Action Group
+
+**Step 1:** Monitor → **Action Groups** → **+ Create**
+
+**Step 2:** Basics tab:
+- Subscription and Resource Group
+- Action group name: `OpsTeam-Alerts`
+- Display name: `OpsTeam`
+
+**Step 3:** Notifications tab:
+- Click **+ Add notification**
+- Type: `Email/SMS/Push/Voice`
+- Name: `Lead Engineer`
+- Email: `engineer@company.com`
+- SMS: ✅ check → enter phone number
+
+**Step 4:** Actions tab (optional):
+- Click **+ Add action**
+- Type: `Webhook`
+- URI: `https://hooks.slack.com/services/...` (Slack integration)
+
+**Step 5:** Review + Create
+
+---
+
+## 11. Azure Dashboards & Workbooks
+
+### Azure Dashboards
+
+Dashboards provide a **customizable, shared view** of your Azure resources in the portal.
+
+**Creating a Dashboard:**
+1. Azure Portal → **Dashboard** → **+ New dashboard**
+2. Choose **Blank dashboard** or a template
+3. Click **+ Add tile** or drag from the **Tile Gallery**
+4. Add: Metrics charts, Alert summaries, Log query results
+5. **Save** and optionally **Share** with team members
+
+**Best Practices:**
+- Create separate dashboards per team/environment (Prod vs Dev)
+- Pin most critical metrics to the top
+- Use time filters consistently
+
+---
+
+### Azure Workbooks
+
+Workbooks are **interactive, rich reports** combining text, queries, metrics, and parameters into comprehensive analytical views.
+
+**Use Cases:**
+- Availability reports for stakeholders
+- Performance trend analysis
+- Security audit reports
+- Cost and usage summaries
+
+**Creating a Workbook:**
+1. Monitor → **Workbooks** → **+ New**
+2. Click **+ Add** → Choose element type:
+   - **Text** – Add markdown headings, descriptions
+   - **Query** – Add a KQL query with chart
+   - **Metrics** – Add a metrics chart
+   - **Parameters** – Add time range or resource selectors
+3. **Save** the workbook with a name
+
+---
+
+## 12. Application Insights
+
+### What is Application Insights?
+
+**Application Insights** is an **Application Performance Management (APM)** service — a part of Azure Monitor. It monitors your **live applications**, auto-detects performance anomalies, and provides tools to diagnose issues.
+
+### What Application Insights Tracks
+
+| Data Type | Examples |
+|---|---|
+| **Request rates** | How many requests per second |
+| **Response times** | How fast are requests served |
+| **Failure rates** | % of requests that fail |
+| **Exceptions** | Errors thrown by code |
+| **Page views** | Browser-side telemetry |
+| **User sessions** | Who is using your app |
+| **Dependencies** | Calls to SQL, REST APIs, etc. |
+| **Custom events** | Your own business metrics |
+
+### Setting Up Application Insights
+
+**Option A: Auto-instrumentation (No Code Changes)**
+- For Azure App Service and Azure Functions
+- Enable via: App Service → **Application Insights** tab → Turn on
+
+**Option B: SDK-based (Code Change Required)**
+
+For **.NET:**
+```csharp
+// Install NuGet Package: Microsoft.ApplicationInsights.AspNetCore
+// In Program.cs:
+builder.Services.AddApplicationInsightsTelemetry(
+    options => options.ConnectionString = "InstrumentationKey=xxxxx");
+```
+
+For **Node.js:**
+```javascript
+const appInsights = require('applicationinsights');
+appInsights.setup('YOUR_CONNECTION_STRING').start();
+```
+
+For **Python:**
+```python
+from opencensus.ext.azure.log_exporter import AzureLogHandler
+import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(AzureLogHandler(
+    connection_string='InstrumentationKey=xxxxx'))
+```
+
+### Key Application Insights Features
+
+**1. Application Map**
+- Visual diagram of all components and their dependencies
+- Shows failure rates between services
+
+**2. Live Metrics**
+- Real-time streaming of requests, failures, server health
+- Zero latency view for production incident monitoring
+
+**3. Transaction Search**
+- Search individual requests end-to-end
+- See exact exceptions with stack traces
+
+**4. Availability Tests**
+- Ping your app from multiple global locations
+- Get alerted if your site is down anywhere in the world
+
+**5. Failure Analysis**
+- Drill into failed requests
+- Group exceptions by type, count, user impact
+
+**6. Performance Analysis**
+- Identify slow operations
+- Compare performance across time periods
+
+---
+
+## 13. Azure Monitor for VMs
+
+### Overview
+
+Azure Monitor for VMs (also called **VM Insights**) provides:
+- **Performance monitoring** (CPU, Memory, Disk, Network)
+- **Map view** of running processes and connections
+- **Dependency tracking** between machines
+
+### Enabling VM Insights
+
+**Step 1:** Azure Portal → **Monitor** → **Virtual Machines** (under Insights)  
+**Step 2:** Click **Not Monitored** tab  
+**Step 3:** Select your VM → Click **Enable**  
+**Step 4:** Choose or create a **Log Analytics Workspace**  
+**Step 5:** Enable the **Azure Monitor Agent**  
+**Step 6:** Click **Configure**  
+
+### What You Get
+
+- **Performance tab:** Pre-built charts for CPU, memory, disk, network
+- **Map tab:** Shows running processes and TCP connections to other machines
+- **Logical Disks:** Per-disk I/O, latency, free space
+
+---
+
+## 14. Azure Monitor for Containers
+
+### Overview
+
+**Container Insights** monitors the performance of container workloads deployed to:
+- **Azure Kubernetes Service (AKS)**
+- **Azure Container Instances (ACI)**
+- **Arc-enabled Kubernetes**
+
+### Metrics Collected
+
+| Level | Metrics |
+|---|---|
+| **Node** | CPU %, Memory %, Disk usage |
+| **Pod** | CPU requests vs limits |
+| **Container** | Memory working set, Restarts |
+| **Cluster** | Overall health and capacity |
+
+### Enabling Container Insights for AKS
+
+```bash
+# Enable via Azure CLI
+az aks enable-addons \
+  --resource-group MyResourceGroup \
+  --name MyAKSCluster \
+  --addons monitoring \
+  --workspace-resource-id /subscriptions/{id}/resourceGroups/{rg}/providers/Microsoft.OperationalInsights/workspaces/{workspace}
+```
+
+### Useful KQL for Containers
+
+```kql
+// Pod restarts in last 24 hours
+KubePodInventory
+| where TimeGenerated > ago(24h)
+| where PodRestartCount > 0
+| summarize Restarts = max(PodRestartCount) by PodName, Namespace
+| order by Restarts desc
+```
+
+---
+
+## 15. Diagnostic Settings
+
+### What are Diagnostic Settings?
+
+Diagnostic Settings control **where your resource logs and metrics are sent**. By default, most logs are NOT collected — you must configure this.
+
+### Destination Options
+
+| Destination | Use Case |
+|---|---|
+| **Log Analytics Workspace** | Query, alerts, long-term analysis |
+| **Storage Account** | Archiving, compliance, low-cost retention |
+| **Event Hub** | Stream to SIEM (Splunk, QRadar) |
+| **Partner Solution** | Datadog, Dynatrace, etc. |
+
+### Creating Diagnostic Settings
+
+**Step 1:** Go to your resource (e.g., Azure SQL Database)  
+**Step 2:** In the left menu → **Diagnostic settings** (under Monitoring)  
+**Step 3:** Click **+ Add diagnostic setting**  
+**Step 4:** Name it: `sql-diag-to-law`  
+**Step 5:** Select log categories:
+- ✅ SQLInsights
+- ✅ AutomaticTuning
+- ✅ QueryStoreRuntimeStatistics
+- ✅ Errors
+
+**Step 6:** Select metrics:
+- ✅ AllMetrics
+
+**Step 7:** Choose destination:
+- ✅ Send to Log Analytics workspace → Select workspace
+
+**Step 8:** Click **Save**
+
+## 16. Network Monitoring
+
+### Azure Network Watcher
+
+**Network Watcher** provides tools to monitor, diagnose, and gain insights into your Azure network.
+
+### Key Tools
+
+| Tool | Purpose |
+|---|---|
+| **Connection Monitor** | Continuous connectivity monitoring |
+| **IP Flow Verify** | Check if traffic is allowed/denied by NSG |
+| **Next Hop** | Determine routing path |
+| **Packet Capture** | Capture network packets for analysis |
+| **NSG Flow Logs** | Log all traffic through an NSG |
+| **VPN Diagnostics** | Troubleshoot VPN gateways |
+
+### Enabling NSG Flow Logs
+
+**Step 1:** Network Watcher → **NSG flow logs**  
+**Step 2:** Select your **Network Security Group**  
+**Step 3:** Status: **On**  
+**Step 4:** Version: **Version 2** (includes traffic volume)  
+**Step 5:** Choose **Storage Account** for raw logs  
+**Step 6:** Optionally enable **Traffic Analytics** → Choose Log Analytics Workspace  
+**Step 7:** **Save**
+
+### Traffic Analytics
+
+Traffic Analytics provides:
+- Visual map of traffic flows
+- Top talkers (IPs generating most traffic)
+- Malicious flows from threat intelligence
+- Top ports and protocols
+
+---
+
+## 17. Cost Management in Azure Monitor
+
+### What Generates Costs
+
+| Service | Cost Driver |
+|---|---|
+| Log Analytics | Data ingestion (GB/month) + retention beyond 31 days |
+| Application Insights | Data ingestion (5 GB/month free) |
+| Alerts | Number of alert rules and notifications |
+| Metrics (custom) | Per metric series, per minute |
+
+### Cost Optimization Tips
+
+1. **Filter what you collect** – Only enable relevant diagnostic categories
+2. **Set data caps** – Log Analytics → Usage and estimated costs → Daily cap
+3. **Use Basic Logs tier** – For high-volume, low-query data (cheaper)
+4. **Archive old logs** – Move to Storage Account after 31 days
+5. **Sampling in App Insights** – Reduce telemetry volume automatically
+6. **Deduplicate workspaces** – Use one workspace per region/environment
+
+### Estimating Costs
+
+Use the **Azure Pricing Calculator:**
+- Go to: `https://azure.microsoft.com/en-us/pricing/calculator/`
+- Search: "Log Analytics"
+- Enter estimated GB/day ingestion
+- Choose retention period
+
+---
+
+## 18. Best Practices
+
+### Monitoring Strategy
+
+- **Define SLIs/SLOs first** – What metrics matter for your service?
+- **Monitor from the user's perspective** – Availability tests, response time
+- **Alert on symptoms, not causes** – Alert on high error rate, not CPU alone
+- **Avoid alert fatigue** – Keep alerts meaningful and actionable
+
+### Workspace Design
+
+- **One workspace per environment** (Dev, Staging, Production)
+- **One workspace per region** for data residency compliance
+- **Centralized workspace** for cross-resource correlation
+
+### Alert Design
+
+- ✅ Every alert should have a runbook/playbook linked
+- ✅ Set proper severity levels consistently
+- ✅ Use dynamic thresholds for variable workloads
+- ✅ Test alerts before production deployment
+- ✅ Review and tune alerts regularly
+
+### Security Monitoring
+
+- Enable **Microsoft Defender for Cloud** for security insights
+- Monitor **Azure Active Directory** sign-in logs
+- Set alerts on **privileged operations** in Activity Log
+- Enable **NSG Flow Logs** for network visibility
+
+---
+
+## Hands-On Labs
+
+### View Platform Metrics
+
+**Objective:** Explore metrics for a Virtual Machine
+
+**Steps:**
+1. Create a Windows VM (B2s is sufficient)
+2. Go to Monitor → Metrics
+3. Select the VM as scope
+4. Plot `Percentage CPU` with `Average` aggregation
+5. Add another metric: `Network In Total`
+6. Pin the chart to a Dashboard
+7. **Question:** What was the peak CPU over the last hour?
+
+
+
+### Create a Log Analytics Workspace and Query Logs
+
+**Objective:** Set up a workspace and run KQL queries
+
+**Steps:**
+1. Create a Log Analytics Workspace
+2. Enable Diagnostic Settings on your VM to send logs to the workspace
+3. Wait 10–15 minutes for data to flow
+4. Go to Log Analytics → Logs
+5. Run this query:
+   ```kql
+   Heartbeat
+   | where TimeGenerated > ago(1h)
+   | summarize LastBeat = max(TimeGenerated) by Computer
+   ```
+6. **Question:** Is your VM sending heartbeats?
+
+
+### Create a CPU Alert
+
+**Objective:** Set up a metric alert with email notification
+
+**Steps:**
+1. Create an Action Group with your email
+2. Create an Alert Rule on your VM
+3. Condition: CPU > 80% for 5 minutes
+4. Assign the Action Group
+5. Stress-test the VM:
+   - Windows: `stress-ng --cpu 4 --timeout 60s` (or use Task Manager stress)
+   - Linux: `stress --cpu 4 --timeout 60`
+6. Wait for alert email
+7. **Question:** How long did it take for the alert to fire?
+
+
+### Application Insights
+
+**Objective:** Enable App Insights on a Web App
+
+**Steps:**
+1. Create an Azure App Service (Free tier)
+2. Deploy a simple web app or use the default page
+3. Go to App Service → Application Insights → Enable
+4. Browse to your app 10+ times (including some 404 pages)
+5. Open Application Insights → Failures
+6. Run this query:
+   ```kql
+   requests
+   | where success == false
+   | summarize count() by resultCode
+   ```
+7. **Question:** What HTTP status codes caused failures?
+
+---
+
+### Dashboard Creation
+
+**Objective:** Build a monitoring dashboard
+
+**Steps:**
+1. Create a new Dashboard named `Production Overview`
+2. Pin:
+   - CPU metric chart for your VM
+   - Alert summary tile
+   - Log Analytics query result (error count)
+3. Share the dashboard with another team member
+4. **Challenge:** Add an Availability tile showing VM uptime
+
